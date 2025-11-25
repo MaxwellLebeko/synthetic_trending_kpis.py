@@ -65,14 +65,66 @@ col1.metric("📊 Market Index", latest["market_index"])
 col2.metric("📦 Trade Volume", latest["trade_volume"])
 col3.metric("😊 Sentiment Score", latest["sentiment"])
 
+# KPIs
+with mid:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("<div style='display:flex; gap:32px; align-items:center;'>", unsafe_allow_html=True)
+    if sector == "Technology":
+        f_cur = df_win["Funding_ZAR_M"].iloc[-1]
+        f_prev = df_win["Funding_ZAR_M"].iloc[-2]
+        s_cur = df_win["Sentiment"].iloc[-1]
+        g_cur = df_win["Growth_YoY_%"].iloc[-1]
+        m_cur = int(df_win["Social_Mentions"].iloc[-1])
+        st.markdown(f"""
+            <div>
+              <div class='kpi'>R {f_cur:,.1f}M</div>
+              <div class='kpi-label'>Funding (window)</div>
+            </div>
+            <div>
+              <div class='kpi'>{s_cur}</div>
+              <div class='kpi-label'>Market Sentiment (0-100)</div>
+            </div>
+            <div>
+              <div class='kpi'>{g_cur}%</div>
+              <div class='kpi-label'>YoY Growth</div>
+            </div>
+            <div>
+              <div class='kpi'>{m_cur:,}</div>
+              <div class='kpi-label'>Social Mentions</div>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        inv_cur = df_win["Investment_ZAR_M"].iloc[-1]
+        ad_cur = df_win["Adoption_%"].iloc[-1]
+        s_cur = df_win["Sentiment"].iloc[-1]
+        p_cur = int(df_win["Policy_Mentions"].iloc[-1])
+        st.markdown(f"""
+            <div>
+              <div class='kpi'>R {inv_cur:,.1f}M</div>
+              <div class='kpi-label'>Investment (window)</div>
+            </div>
+            <div>
+              <div class='kpi'>{ad_cur}%</div>
+              <div class='kpi-label'>Adoption Rate</div>
+            </div>
+            <div>
+              <div class='kpi'>{s_cur}</div>
+              <div class='kpi-label'>Market Sentiment (0-100)</div>
+            </div>
+            <div>
+              <div class='kpi'>{p_cur:,}</div>
+              <div class='kpi-label'>Policy Mentions</div>
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-##### ============================
-##### MAIN FEATURE — TREND CHART
-##### ============================
-
-trend_cols = st.columns([0.05, 0.9, 0.05])
-with trend_cols[1]:
-    st.line_chart(
-        df.set_index("date")[["market_index"]],
-        height=250
-    )
+# charts & history
+with right:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.subheader("Trend (window)")
+    if sector == "Technology":
+        st.line_chart(df_win.set_index("date")[["Funding_ZAR_M", "Sentiment", "Growth_YoY_%"]])
+    else:
+        st.line_chart(df_win.set_index("date")[["Investment_ZAR_M", "Adoption_%", "Sentiment"]])
+    st.markdown("</div>", unsafe_allow_html=True)
