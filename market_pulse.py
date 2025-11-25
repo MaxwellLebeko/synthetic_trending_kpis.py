@@ -87,94 +87,92 @@ df_win = synthetic_data[sector]
 
 
 ##### ============================
-##### KPIs — FULL ORIGINAL METRICS
+##### KPIs — HORIZONTAL LAYOUT
 ##### ============================
 
-mid = st.container()
-with mid:
-    mid = st.container()
-with mid:
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    # Create 4 columns for KPIs
+st.markdown("<div class='card'>", unsafe_allow_html=True)
+
+if sector == "Technology":
+    f_cur = df_win["Funding_ZAR_M"].iloc[-1]
+    s_cur = df_win["Sentiment"].iloc[-1]
+    g_cur = df_win["Growth_YoY_%"].iloc[-1]
+    m_cur = int(df_win["Social_Mentions"].iloc[-1])
+    
     col1, col2, col3, col4 = st.columns(4)
-
+    
     with col1:
-        st.markdown(f"""
-        <div class='kpi'>R {f_cur:,.1f} M</div>
-        <div class='kpi-label'>Funding (window)</div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-        <div class='kpi'>{s_cur}</div>
-        <div class='kpi-label'>Market Sentiment (0-100)</div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown(f"""
-        <div class='kpi'>{g_cur} %</div>
-        <div class='kpi-label'>YoY Growth</div>
-        """, unsafe_allow_html=True)
-
-    with col4:
-        st.markdown(f"""
-        <div class='kpi'>{m_cur:,}</div>
-        <div class='kpi-label'>Social Mentions</div>
-        """, unsafe_allow_html=True)
-
-
-    if sector == "Technology":
-        f_cur = df_win["Funding_ZAR_M"].iloc[-1]
-        s_cur = df_win["Sentiment"].iloc[-1]
-        g_cur = df_win["Growth_YoY_%"].iloc[-1]
-        m_cur = int(df_win["Social_Mentions"].iloc[-1])
-
         st.markdown(f"""
             <div>
               <div class='kpi'>R {f_cur:,.1f}M</div>
               <div class='kpi-label'>Funding (window)</div>
             </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
             <div>
               <div class='kpi'>{s_cur}</div>
               <div class='kpi-label'>Market Sentiment (0-100)</div>
             </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
             <div>
               <div class='kpi'>{g_cur}%</div>
               <div class='kpi-label'>YoY Growth</div>
             </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
             <div>
               <div class='kpi'>{m_cur:,}</div>
               <div class='kpi-label'>Social Mentions</div>
             </div>
         """, unsafe_allow_html=True)
 
-    else:
-        inv_cur = df_win["Investment_ZAR_M"].iloc[-1]
-        ad_cur = df_win["Adoption_%"].iloc[-1]
-        s_cur = df_win["Sentiment"].iloc[-1]
-        p_cur = int(df_win["Policy_Mentions"].iloc[-1])
-
+else:
+    inv_cur = df_win["Investment_ZAR_M"].iloc[-1]
+    ad_cur = df_win["Adoption_%"].iloc[-1]
+    s_cur = df_win["Sentiment"].iloc[-1]
+    p_cur = int(df_win["Policy_Mentions"].iloc[-1])
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
         st.markdown(f"""
             <div>
               <div class='kpi'>R {inv_cur:,.1f}M</div>
               <div class='kpi-label'>Investment (window)</div>
             </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
             <div>
               <div class='kpi'>{ad_cur}%</div>
               <div class='kpi-label'>Adoption Rate</div>
             </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
             <div>
               <div class='kpi'>{s_cur}</div>
               <div class='kpi-label'>Market Sentiment (0-100)</div>
             </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
             <div>
               <div class='kpi'>{p_cur:,}</div>
               <div class='kpi-label'>Policy Mentions</div>
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 
 ##### ============================
