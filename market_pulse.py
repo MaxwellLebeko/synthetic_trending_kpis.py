@@ -87,13 +87,14 @@ df_win = synthetic_data[sector]
 
 
 ##### ============================
-##### KPIs — FULL ORIGINAL METRICS
+##### KPIs — FULL ORIGINAL METRICS ABOVE CHART
 ##### ============================
 
-mid = st.container()
-with mid:
+# KPI row centered
+kpi_cols = st.columns([0.05, 0.9, 0.05])
+with kpi_cols[1]:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("<div style='display:flex; gap:42px; align-items:flex-end;'>", unsafe_allow_html=True)
+    st.markdown("<div style='display:flex; justify-content:space-between; gap:32px;'>", unsafe_allow_html=True)
 
     if sector == "Technology":
         f_cur = df_win["Funding_ZAR_M"].iloc[-1]
@@ -104,11 +105,11 @@ with mid:
         st.markdown(f"""
             <div>
               <div class='kpi'>R {f_cur:,.1f}M</div>
-              <div class='kpi-label'>Funding (window)</div>
+              <div class='kpi-label'>Funding</div>
             </div>
             <div>
               <div class='kpi'>{s_cur}</div>
-              <div class='kpi-label'>Market Sentiment (0-100)</div>
+              <div class='kpi-label'>Sentiment</div>
             </div>
             <div>
               <div class='kpi'>{g_cur}%</div>
@@ -129,15 +130,15 @@ with mid:
         st.markdown(f"""
             <div>
               <div class='kpi'>R {inv_cur:,.1f}M</div>
-              <div class='kpi-label'>Investment (window)</div>
+              <div class='kpi-label'>Investment</div>
             </div>
             <div>
               <div class='kpi'>{ad_cur}%</div>
-              <div class='kpi-label'>Adoption Rate</div>
+              <div class='kpi-label'>Adoption</div>
             </div>
             <div>
               <div class='kpi'>{s_cur}</div>
-              <div class='kpi-label'>Market Sentiment (0-100)</div>
+              <div class='kpi-label'>Sentiment</div>
             </div>
             <div>
               <div class='kpi'>{p_cur:,}</div>
@@ -150,12 +151,12 @@ with mid:
 
 
 ##### ============================
-##### TREND CHART — CENTERED
+##### TREND CHART BELOW KPIs
 ##### ============================
 
-trend_cols = st.columns([0.05, 0.9, 0.05])
-with trend_cols[1]:
+chart_row = st.columns([0.05, 0.9, 0.05])
+with chart_row[1]:
     if sector == "Technology":
-        st.line_chart(df_win.set_index("date")[["Funding_ZAR_M", "Sentiment", "Growth_YoY_%"]], height=240)
+        st.line_chart(df_win.set_index("date")[["Funding_ZAR_M", "Sentiment", "Growth_YoY_%"]], height=260)
     else:
-        st.line_chart(df_win.set_index("date")[["Investment_ZAR_M", "Adoption_%", "Sentiment"]], height=240)
+        st.line_chart(df_win.set_index("date")[["Investment_ZAR_M", "Adoption_%", "Sentiment"]], height=260)
