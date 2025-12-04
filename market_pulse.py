@@ -17,7 +17,7 @@ st.set_page_config(
 
 np.random.seed(42)
 
-dates = pd.date_range(start="2024-01-01", periods=30, freq="D")
+dates = pd.date_range(start="2026-01-01", periods=30, freq="D")
 
 tech = pd.DataFrame({
     "date": dates,
