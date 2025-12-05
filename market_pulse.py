@@ -225,11 +225,9 @@ with colB:
 # SECTOR SELECTOR WITH AUTO-ROTATION
 # ============================
 
-# Update indicator
-st.markdown(f"<div class='update-indicator'>🔄 Updated: {datetime.datetime.now().strftime('%H:%M:%S')}</div>", unsafe_allow_html=True)
-
 # Create a single selector with auto-rotation
 current_sector = sector_names[st.session_state.sector_index]
+
 # Manual sector selector
 sector = st.selectbox(
     "Choose sector (auto-rotates every 10 seconds)",
