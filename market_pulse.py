@@ -165,7 +165,57 @@ def build_sector(name, iteration=0):
     """Build sector data with time-based variations for slideshow effect."""
     dates, t1, t2, t3 = generate_live_timeseries()
     
-  
+   # Add iteration-based variation for slideshow effect
+    phase = iteration * 0.1
+    t1 = t1 + np.sin(np.linspace(0, 2*np.pi, len(t1)) + phase) * 2
+    t2 = t2 + np.cos(np.linspace(0, 2*np.pi, len(t2)) + phase) * 1.5
+    t3 = t3 + np.sin(np.linspace(0, 2*np.pi, len(t3)) + phase * 2) * 1
+
+    if name == "ICT":
+        return pd.DataFrame({
+            "date": dates,
+            "Funding_ZAR_M": (50 + t1 * 2).round(2),
+            "Sentiment": (50 + t2).clip(1, 99).round(1),
+            "Growth_YoY_%": (5 + t3).round(1),
+            "Social_Mentions": (500 + t1 * 10 + np.random.randint(0, 200, len(dates))).round()
+        })
+
+    if name == "FinTech":
+        return pd.DataFrame({
+            "date": dates,
+            "Funding_ZAR_M": (80 + t1 * 3).round(2),
+            "Sentiment": (40 + t2 * 1.2).clip(1, 99).round(1),
+            "Growth_YoY_%": (2 + t3 * 0.5).round(1),
+            "Social_Mentions": (300 + t1 * 8 + np.random.randint(0, 150, len(dates))).round()
+        })
+
+    if name == "AgriTech":
+        return pd.DataFrame({
+            "date": dates,
+            "Investment_ZAR_M": (40 + t1 * 2.5).round(2),
+            "Sentiment": (55 + t2).clip(1, 99).round(1),
+            "Adoption_%": (10 + t3).round(1),
+            "Policy_Mentions": (200 + np.abs(t2) * 5).round()
+        })
+
+    if name == "Health & Wellness":
+        return pd.DataFrame({
+            "date": dates,
+            "Investment_ZAR_M": (60 + t1 * 1.5).round(2),
+            "Sentiment": (45 + t2).clip(1, 99).round(1),
+            "Adoption_%": (20 + t3).round(1),
+            "Policy_Mentions": (250 + np.abs(t3) * 10).round()
+        })
+
+    if name == "Tourism & Hospitality":
+        return pd.DataFrame({
+            "date": dates,
+            "Investment_ZAR_M": (70 + t1 * 2).round(2),
+            "Sentiment": (50 + t2 * 1.1).clip(1, 99).round(1),
+            "Adoption_%": (15 + t3 * 1.3).round(1),
+            "Policy_Mentions": (300 + np.abs(t1)).round()
+        })
+
 
 
 # ============================
