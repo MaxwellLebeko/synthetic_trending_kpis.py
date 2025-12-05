@@ -131,7 +131,7 @@ sector = st.selectbox("Sector", list(sector_data.keys()), label_visibility="coll
 
 timeframe = st.selectbox(
     "Timeframe",
-    ["1H", "4H", "1D", "1W", "1M", "3M", "6M", "1Y"],
+    ["1D", "1W", "1M", "3M", "6M", "1Y"],
     label_visibility="collapsed"
 )
 
@@ -139,10 +139,9 @@ timeframe = st.selectbox(
 # LOAD DATA FOR SELECTED SECTOR + TIMEFRAME
 # =============================================
 
-df_hourly = sector_data[sector]["hourly"]
 df_daily = sector_data[sector]["daily"]
 
-df_win = get_timeframe_df(df_hourly, df_daily, timeframe)
+df_win = get_timeframe_df(df_daily, timeframe)
 
 # =============================================
 # KPIs — ALWAYS LAST VALUE OF FILTERED DATA
