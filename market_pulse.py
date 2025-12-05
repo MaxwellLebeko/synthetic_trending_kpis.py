@@ -6,10 +6,29 @@ import numpy as np
 ##### PAGE CONFIG — CLEAN EMBEDDING
 ##### ============================
 
-st.set_page_config(
-    page_title="BN Pulse Board",
-    layout="wide",
-)
+st.set_page_config(page_title="BN Pulse Board", layout="wide")
+
+# Remove padding
+st.markdown("""
+<style>
+body { margin:0; padding:0; }
+div.block-container { padding-top: 0rem; }
+.card {
+  background-color: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.kpi {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.kpi-label {
+  font-size: 0.75rem;
+  color: #ccc;
+}
+footer {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True
 
 ##### ============================
 ##### SYNTHETIC MARKET DATA
