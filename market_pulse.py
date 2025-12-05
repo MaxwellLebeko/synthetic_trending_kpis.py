@@ -41,7 +41,7 @@ def generate_sector_data(seed=42):
     np.random.seed(seed)
 
     # Create multiple granular date levels
-    dates_1h = pd.date_range(start="2026-01-01", periods=24*60, freq="H")  # 60 days hourly
+   # 60 days hourly
     dates_1d = pd.date_range(start="2025-01-01", periods=400, freq="D")
     
     # Base metrics for all sectors
@@ -54,11 +54,11 @@ def generate_sector_data(seed=42):
             "Mentions": np.random.uniform(100, 5000, len(dates)).round()
         })
 
-    df_hourly = build_df(dates_1h)
+    
     df_daily = build_df(dates_1d)
 
     return {
-        "hourly": df_hourly,
+        
         "daily": df_daily
     }
 
@@ -78,17 +78,10 @@ sector_data = {
 # TIMEFRAME AGGREGATION FUNCTION
 # =============================================
 
-def get_timeframe_df(df_hourly, df_daily, timeframe):
+def get_timeframe_df(df_daily, timeframe):
 
-    df = pd.concat([df_hourly, df_daily]).drop_duplicates("date").sort_values("date")
-    df = df.set_index("date")
-
-    if timeframe == "1H":
-        return df.resample("H").mean().dropna().reset_index()
-
-    elif timeframe == "4H":
-        return df.resample("4H").mean().dropna().reset_index()
-
+   
+   
     elif timeframe == "1D":
         return df.resample("D").mean().dropna().reset_index()
 
