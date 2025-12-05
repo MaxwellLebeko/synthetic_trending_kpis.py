@@ -1,18 +1,20 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import datetime
 
-# ============================
+# =============================================
 # PAGE CONFIG
-# ============================
+# =============================================
 
 st.set_page_config(page_title="BN Pulse Board", layout="wide")
 
-# Remove padding
+# =============================================
+# STYLE — CLEAN SIMPLIFIED
+# =============================================
+
 st.markdown("""
 <style>
-body { margin:0; padding:0; }
+body { margin: 0; padding:0; }
 div.block-container { padding-top: 0rem; }
 .card {
   background-color: rgba(255,255,255,0.04);
@@ -31,193 +33,181 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
+# =============================================
+# SYNTHETIC DATA GENERATION FUNCTION
+# =============================================
 
-# ============================
-# SYNTHETIC DAILY-LIVE DATA
-# ============================
+def generate_sector_data(seed=42):
+    np.random.seed(seed)
 
-def generate_live_timeseries(days=150):
-    """Generate realistic rolling market data over time."""
-    today = datetime.date.today()
-    dates = pd.date_range(end=today, periods=days, freq="D")
-
-    base_up = np.cumsum(np.random.normal(0.3, 0.9, size=days))  # trending upward
-    base_flat = np.cumsum(np.random.normal(0.01, 0.4, size=days))  # sideways trend
-    base_vol = np.abs(np.random.normal(0, 1, size=days))  # noisy
-
-    return dates, base_up, base_flat, base_vol
-
-
-def build_sector(name):
-    dates, t1, t2, t3 = generate_live_timeseries()
-
-    if name == "ICT":
+    # Create multiple granular date levels
+    dates_1h = pd.date_range(start="2026-01-01", periods=24*60, freq="H")  # 60 days hourly
+    dates_1d = pd.date_range(start="2025-01-01", periods=400, freq="D")
+    
+    # Base metrics for all sectors
+    def build_df(dates):
         return pd.DataFrame({
             "date": dates,
-            "Funding_ZAR_M": (50 + t1 * 2).round(2),
-            "Sentiment": (50 + t2).clip(1, 99).round(1),
-            "Growth_YoY_%": (5 + t3).round(1),
-            "Social_Mentions": (500 + t1 * 10 + np.random.randint(0, 200, len(dates))).round()
+            "Funding_ZAR_M": np.random.uniform(10, 300, len(dates)).round(2),
+            "Sentiment": np.random.uniform(5, 95, len(dates)).round(1),
+            "Growth_YoY_%": np.random.uniform(-5, 20, len(dates)).round(1),
+            "Mentions": np.random.uniform(100, 5000, len(dates)).round()
         })
 
-    if name == "FinTech":
-        return pd.DataFrame({
-            "date": dates,
-            "Funding_ZAR_M": (80 + t1 * 3).round(2),
-            "Sentiment": (40 + t2 * 1.2).clip(1, 99).round(1),
-            "Growth_YoY_%": (2 + t3 * 0.5).round(1),
-            "Social_Mentions": (300 + t1 * 8 + np.random.randint(0, 150, len(dates))).round()
-        })
+    df_hourly = build_df(dates_1h)
+    df_daily = build_df(dates_1d)
 
-    if name == "AgriTech":
-        return pd.DataFrame({
-            "date": dates,
-            "Investment_ZAR_M": (40 + t1 * 2.5).round(2),
-            "Sentiment": (55 + t2).clip(1, 99).round(1),
-            "Adoption_%": (10 + t3).round(1),
-            "Policy_Mentions": (200 + np.abs(t2) * 5).round()
-        })
+    return {
+        "hourly": df_hourly,
+        "daily": df_daily
+    }
 
-    if name == "Health & Wellness":
-        return pd.DataFrame({
-            "date": dates,
-            "Investment_ZAR_M": (60 + t1 * 1.5).round(2),
-            "Sentiment": (45 + t2).clip(1, 99).round(1),
-            "Adoption_%": (20 + t3).round(1),
-            "Policy_Mentions": (250 + np.abs(t3) * 10).round()
-        })
+# =============================================
+# CREATE DATA FOR ALL SECTORS
+# =============================================
 
-    if name == "Tourism & Hospitality":
-        return pd.DataFrame({
-            "date": dates,
-            "Investment_ZAR_M": (70 + t1 * 2).round(2),
-            "Sentiment": (50 + t2 * 1.1).clip(1, 99).round(1),
-            "Adoption_%": (15 + t3 * 1.3).round(1),
-            "Policy_Mentions": (300 + np.abs(t1)).round()
-        })
-
-
-# map sectors to dataframes
-all_sectors = {
-    "ICT": build_sector("ICT"),
-    "FinTech": build_sector("FinTech"),
-    "AgriTech": build_sector("AgriTech"),
-    "Health & Wellness": build_sector("Health & Wellness"),
-    "Tourism & Hospitality": build_sector("Tourism & Hospitality")
+sector_data = {
+    "ICT": generate_sector_data(1),
+    "FinTech": generate_sector_data(2),
+    "AgriTech": generate_sector_data(3),
+    "Health & Wellness": generate_sector_data(4),
+    "Tourism & Hospitality": generate_sector_data(5),
 }
 
+# =============================================
+# TIMEFRAME AGGREGATION FUNCTION
+# =============================================
 
+def get_timeframe_df(df_hourly, df_daily, timeframe):
 
-# ============================
-# REPORT BUTTON (center-top)
-# ============================
+    df = pd.concat([df_hourly, df_daily]).drop_duplicates("date").sort_values("date")
+    df = df.set_index("date")
+
+    if timeframe == "1H":
+        return df.resample("H").mean().dropna().reset_index()
+
+    elif timeframe == "4H":
+        return df.resample("4H").mean().dropna().reset_index()
+
+    elif timeframe == "1D":
+        return df.resample("D").mean().dropna().reset_index()
+
+    elif timeframe == "1W":
+        return df.resample("W").mean().dropna().reset_index()
+
+    elif timeframe == "1M":
+        return df.resample("M").mean().dropna().reset_index()
+
+    elif timeframe == "3M":
+        return df.resample("Q").mean().dropna().reset_index()
+
+    elif timeframe == "6M":
+        return df.resample("2Q").mean().dropna().reset_index()
+
+    elif timeframe == "1Y":
+        return df.resample("A").mean().dropna().reset_index()
+
+    return df.reset_index()
+
+# =============================================
+# REPORT DOWNLOAD (CENTER)
+# =============================================
 
 colA, colB, colC = st.columns([1, 2, 1])
 with colB:
     st.download_button(
         label="📄 Download Sector Report",
-        data="Preview report content...",
+        data="Preview of auto-generated report...",
         file_name="BN_Market_Report.pdf",
         type="secondary",
         use_container_width=True
     )
 
+# =============================================
+# SELECTOR — SECTOR & TIMEFRAME
+# =============================================
 
+sector = st.selectbox("Sector", list(sector_data.keys()), label_visibility="collapsed")
 
-# ============================
-# SECTOR SELECTOR
-# ============================
-
-sector = st.selectbox(
-    "Choose sector",
-    list(all_sectors.keys()),
+timeframe = st.selectbox(
+    "Timeframe",
+    ["1H", "4H", "1D", "1W", "1M", "3M", "6M", "1Y"],
     label_visibility="collapsed"
 )
 
-df = all_sectors[sector]
+# =============================================
+# LOAD DATA FOR SELECTED SECTOR + TIMEFRAME
+# =============================================
 
+df_hourly = sector_data[sector]["hourly"]
+df_daily = sector_data[sector]["daily"]
 
+df_win = get_timeframe_df(df_hourly, df_daily, timeframe)
 
-# ============================
-# KPIs — HORIZONTAL
-# ============================
+# =============================================
+# KPIs — ALWAYS LAST VALUE OF FILTERED DATA
+# =============================================
+
+latest = df_win.iloc[-1]
+
+kpi1 = latest["Funding_ZAR_M"]
+kpi2 = latest["Sentiment"]
+kpi3 = latest["Growth_YoY_%"]
+kpi4 = int(latest["Mentions"])
 
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 
-if sector in ["ICT", "FinTech"]:
-    col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4 = st.columns(4)
 
-    with col1:
-        st.markdown(f"""
-        <div><div class='kpi'>R {df['Funding_ZAR_M'].iloc[-1]:,.1f}M</div>
-        <div class='kpi-label'>Funding</div></div>
-        """, unsafe_allow_html=True)
+with col1:
+    st.markdown(f"""
+        <div>
+          <div class='kpi'>R {kpi1:,.1f}M</div>
+          <div class='kpi-label'>Funding</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-    with col2:
-        st.markdown(f"""
-        <div><div class='kpi'>{df['Sentiment'].iloc[-1]}</div>
-        <div class='kpi-label'>Sentiment (0–100)</div></div>
-        """, unsafe_allow_html=True)
+with col2:
+    st.markdown(f"""
+        <div>
+          <div class='kpi'>{kpi2}</div>
+          <div class='kpi-label'>Market Sentiment</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-    with col3:
-        st.markdown(f"""
-        <div><div class='kpi'>{df['Growth_YoY_%'].iloc[-1]}%</div>
-        <div class='kpi-label'>YoY Growth</div></div>
-        """, unsafe_allow_html=True)
+with col3:
+    st.markdown(f"""
+        <div>
+          <div class='kpi'>{kpi3}%</div>
+          <div class='kpi-label'>YoY Growth</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-    with col4:
-        st.markdown(f"""
-        <div><div class='kpi'>{int(df['Social_Mentions'].iloc[-1]):,}</div>
-        <div class='kpi-label'>Social Mentions</div></div>
-        """, unsafe_allow_html=True)
-
-
-else:
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.markdown(f"""
-        <div><div class='kpi'>R {df['Investment_ZAR_M'].iloc[-1]:,.1f}M</div>
-        <div class='kpi-label'>Investment</div></div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-        <div><div class='kpi'>{df['Adoption_%'].iloc[-1]}%</div>
-        <div class='kpi-label'>Adoption Rate</div></div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown(f"""
-        <div><div class='kpi'>{df['Sentiment'].iloc[-1]}</div>
-        <div class='kpi-label'>Sentiment</div></div>
-        """, unsafe_allow_html=True)
-
-    with col4:
-        st.markdown(f"""
-        <div><div class='kpi'>{int(df['Policy_Mentions'].iloc[-1]):,}</div>
-        <div class='kpi-label'>Policy Mentions</div></div>
-        """, unsafe_allow_html=True)
+with col4:
+    st.markdown(f"""
+        <div>
+          <div class='kpi'>{kpi4:,}</div>
+          <div class='kpi-label'>Mentions</div>
+        </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
+# =============================================
+# TREND CHART
+# =============================================
 
+chart_cols = st.columns([0.05, 0.9, 0.05])
+with chart_cols[1]:
+    st.line_chart(
+        df_win.set_index("date")[["Funding_ZAR_M", "Sentiment", "Growth_YoY_%"]],
+        height=260
+    )
 
-# ============================
-# TREND CHART — CENTERED
-# ============================
+# =============================================
+# DATA TABLE (TIMEFRAME FILTERED)
+# =============================================
 
-trend = st.columns([0.05, 0.9, 0.05])
-with trend[1]:
-    numeric_cols = df.select_dtypes(include=[np.number]).drop(columns=["Social_Mentions", "Policy_Mentions"], errors="ignore")
-    st.line_chart(numeric_cols.set_index(df["date"]), height=240)
-
-
-
-# ============================
-# OPTIONAL: DATA TABLE (hidden by default)
-# ============================
-
-with st.expander("📊 View full dataset"):
-    st.dataframe(df, height=300)
+st.subheader("Market Data Table")
+st.dataframe(df_win, use_container_width=True)
 
