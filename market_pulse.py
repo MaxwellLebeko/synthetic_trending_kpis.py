@@ -233,8 +233,6 @@ st.markdown(f"<div class='update-indicator'>🔄 Updated: {datetime.datetime.now
 # Create a single selector with auto-rotation
 current_sector = sector_names[st.session_state.sector_index]
 
-# Display current sector with live badge
-st.markdown(f"### 📊 {current_sector} <span class='live-badge'>LIVE</span>", unsafe_allow_html=True)
 
 # Manual sector selector
 sector = st.selectbox(
