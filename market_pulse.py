@@ -12,31 +12,80 @@ st.set_page_config(
     layout="wide",
 )
 
-##### ============================
-##### SYNTHETIC MARKET DATA
-##### ============================
+# SYNTHETIC DAILY-LIVE DATA
+# ============================
 
-np.random.seed(42)
+def generate_live_timeseries(days=150):
+    """Generate realistic rolling market data over time."""
+    today = datetime.date.today()
+    dates = pd.date_range(end=today, periods=days, freq="D")
 
-dates = pd.date_range(start="2024-01-01", periods=30, freq="D")
+    base_up = np.cumsum(np.random.normal(0.3, 0.9, size=days))  # trending upward
+    base_flat = np.cumsum(np.random.normal(0.01, 0.4, size=days))  # sideways trend
+    base_vol = np.abs(np.random.normal(0, 1, size=days))  # noisy
 
-tech = pd.DataFrame({
-    "date": dates,
-    "Funding_ZAR_M": np.random.uniform(20, 200, size=len(dates)).round(2),
-    "Sentiment": np.random.uniform(10, 90, size=len(dates)).round(1),
-    "Growth_YoY_%": np.random.uniform(-3, 15, size=len(dates)).round(1),
-    "Social_Mentions": np.random.uniform(200, 3000, size=len(dates)).round()
-})
+    return dates, base_up, base_flat, base_vol
 
-energy = pd.DataFrame({
-    "date": dates,
-    "Investment_ZAR_M": np.random.uniform(10, 120, size=len(dates)).round(2),
-    "Sentiment": np.random.uniform(10, 90, size=len(dates)).round(1),
-    "Adoption_%": np.random.uniform(2, 38, size=len(dates)).round(1),
-    "Policy_Mentions": np.random.uniform(100, 1300, size=len(dates)).round()
-})
 
-synthetic_data = {"Technology": tech, "Energy": energy}
+def build_sector(name):
+    dates, t1, t2, t3 = generate_live_timeseries()
+
+    if name == "ICT":
+        return pd.DataFrame({
+            "date": dates,
+            "Funding_ZAR_M": (50 + t1 * 2).round(2),
+            "Sentiment": (50 + t2).clip(1, 99).round(1),
+            "Growth_YoY_%": (5 + t3).round(1),
+            "Social_Mentions": (500 + t1 * 10 + np.random.randint(0, 200, len(dates))).round()
+        })
+
+    if name == "FinTech":
+        return pd.DataFrame({
+            "date": dates,
+            "Funding_ZAR_M": (80 + t1 * 3).round(2),
+            "Sentiment": (40 + t2 * 1.2).clip(1, 99).round(1),
+            "Growth_YoY_%": (2 + t3 * 0.5).round(1),
+            "Social_Mentions": (300 + t1 * 8 + np.random.randint(0, 150, len(dates))).round()
+        })
+
+    if name == "AgriTech":
+        return pd.DataFrame({
+            "date": dates,
+            "Investment_ZAR_M": (40 + t1 * 2.5).round(2),
+            "Sentiment": (55 + t2).clip(1, 99).round(1),
+            "Adoption_%": (10 + t3).round(1),
+            "Policy_Mentions": (200 + np.abs(t2) * 5).round()
+        })
+
+    if name == "Health & Wellness":
+        return pd.DataFrame({
+            "date": dates,
+            "Investment_ZAR_M": (60 + t1 * 1.5).round(2),
+            "Sentiment": (45 + t2).clip(1, 99).round(1),
+            "Adoption_%": (20 + t3).round(1),
+            "Policy_Mentions": (250 + np.abs(t3) * 10).round()
+        })
+
+    if name == "Tourism & Hospitality":
+        return pd.DataFrame({
+            "date": dates,
+            "Investment_ZAR_M": (70 + t1 * 2).round(2),
+            "Sentiment": (50 + t2 * 1.1).clip(1, 99).round(1),
+            "Adoption_%": (15 + t3 * 1.3).round(1),
+            "Policy_Mentions": (300 + np.abs(t1)).round()
+        })
+
+
+# map sectors to dataframes
+all_sectors = {
+    "ICT": build_sector("ICT"),
+    "FinTech": build_sector("FinTech"),
+    "AgriTech": build_sector("AgriTech"),
+    "Health & Wellness": build_sector("Health & Wellness"),
+    "Tourism & Hospitality": build_sector("Tourism & Hospitality")
+}
+
+
 
 
 
