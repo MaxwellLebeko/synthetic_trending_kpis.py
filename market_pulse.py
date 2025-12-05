@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import datetime
 import time
-from itertools import cycle
 
 # ============================
 # PAGE CONFIG
@@ -41,47 +40,6 @@ div.block-container { padding-top: 0rem; }
     color: #ccc;
 }
 
-/* Slideshow container */
-.slideshow {
-    display: flex;
-    overflow: hidden;
-    position: relative;
-    background: rgba(20, 20, 40, 0.7);
-    border-radius: 12px;
-    margin: 10px 0;
-    padding: 10px;
-    border: 1px solid rgba(76, 201, 240, 0.2);
-}
-
-.sector-card {
-    min-width: 100%;
-    padding: 15px;
-    text-align: center;
-    transition: transform 0.5s ease;
-    border-radius: 8px;
-    background: rgba(30, 30, 60, 0.5);
-    margin: 0 5px;
-    border: 1px solid rgba(76, 201, 240, 0.1);
-}
-
-.sector-card.active {
-    background: linear-gradient(135deg, rgba(76, 201, 240, 0.2), rgba(67, 97, 238, 0.2));
-    border-color: rgba(76, 201, 240, 0.4);
-    transform: scale(1.02);
-}
-
-.sector-name {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #4CC9F0;
-    margin-bottom: 8px;
-}
-
-.sector-kpi {
-    font-size: 0.9rem;
-    color: #ccc;
-}
-
 /* Animations */
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(76, 201, 240, 0.4); }
@@ -97,11 +55,6 @@ div.block-container { padding-top: 0rem; }
 @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes fadeInOut {
-    0%, 100% { opacity: 0.3; transform: scale(0.95); }
-    50% { opacity: 1; transform: scale(1); }
 }
 
 /* Update indicator */
@@ -130,6 +83,20 @@ div.block-container { padding-top: 0rem; }
     font-weight: bold;
     animation: fadeInOut 2s infinite;
     margin-left: 8px;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.3; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+/* Sector selector styling */
+.sector-selector-container {
+    background: rgba(20, 20, 40, 0.7);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 0;
+    border: 1px solid rgba(76, 201, 240, 0.2);
 }
 
 footer {visibility: hidden;}
@@ -165,7 +132,7 @@ def build_sector(name, iteration=0):
     """Build sector data with time-based variations for slideshow effect."""
     dates, t1, t2, t3 = generate_live_timeseries()
     
-   # Add iteration-based variation for slideshow effect
+    # Add iteration-based variation for slideshow effect
     phase = iteration * 0.1
     t1 = t1 + np.sin(np.linspace(0, 2*np.pi, len(t1)) + phase) * 2
     t2 = t2 + np.cos(np.linspace(0, 2*np.pi, len(t2)) + phase) * 1.5
@@ -217,9 +184,8 @@ def build_sector(name, iteration=0):
         })
 
 
-
 # ============================
-# SLIDESHOW STATE MANAGEMENT
+# STATE MANAGEMENT FOR AUTO-ROTATION
 # ============================
 
 if 'sector_index' not in st.session_state:
@@ -227,9 +193,9 @@ if 'sector_index' not in st.session_state:
     st.session_state.iteration = 0
     st.session_state.last_update = datetime.datetime.now()
 
-# Auto-advance sectors every 5 seconds
+# Auto-advance sectors every 10 seconds
 time_diff = (datetime.datetime.now() - st.session_state.last_update).total_seconds()
-if time_diff > 5:  # Change sector every 5 seconds
+if time_diff > 10:  # Change sector every 10 seconds
     st.session_state.sector_index = (st.session_state.sector_index + 1) % 5
     st.session_state.iteration += 1
     st.session_state.last_update = datetime.datetime.now()
@@ -256,52 +222,30 @@ with colB:
     )
 
 # ============================
-# SLIDESHOW DISPLAY
+# SECTOR SELECTOR WITH AUTO-ROTATION
 # ============================
 
-st.markdown("<div class='slideshow'>", unsafe_allow_html=True)
+st.markdown("<div class='sector-selector-container'>", unsafe_allow_html=True)
 
 # Update indicator
 st.markdown(f"<div class='update-indicator'>🔄 Updated: {datetime.datetime.now().strftime('%H:%M:%S')}</div>", unsafe_allow_html=True)
 
-# Create columns for slideshow
-cols = st.columns(5)
+# Create a single selector with auto-rotation
 current_sector = sector_names[st.session_state.sector_index]
 
-for idx, (sector_name, col) in enumerate(zip(sector_names, cols)):
-    df_sector = all_sectors[sector_name]
-    
-    with col:
-        is_active = (sector_name == current_sector)
-        active_class = "active" if is_active else ""
-        
-        # Get appropriate KPI based on sector type
-        if sector_name in ["ICT", "FinTech"]:
-            kpi_value = f"R {df_sector['Funding_ZAR_M'].iloc[-1]:,.1f}M"
-            kpi_label = "Funding"
-        else:
-            kpi_value = f"R {df_sector['Investment_ZAR_M'].iloc[-1]:,.1f}M"
-            kpi_label = "Investment"
-        
-        st.markdown(f"""
-        <div class='sector-card {active_class}'>
-            <div class='sector-name'>{sector_name}{'<span class="live-badge">LIVE</span>' if is_active else ''}</div>
-            <div class='sector-kpi'>{kpi_value}</div>
-            <div style='font-size: 0.7rem; color: #888;'>{kpi_label}</div>
-        </div>
-        """, unsafe_allow_html=True)
+# Display current sector with live badge
+st.markdown(f"### 📊 {current_sector} <span class='live-badge'>LIVE</span>", unsafe_allow_html=True)
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-# Manual sector selector (optional)
-st.markdown("---")
+# Manual sector selector
 sector = st.selectbox(
-    "Choose sector (or let slideshow auto-rotate)",
+    "Choose sector (auto-rotates every 10 seconds)",
     sector_names,
     index=st.session_state.sector_index,
     key="sector_selector",
     label_visibility="collapsed"
 )
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 # Update index if manually selected
 if sector != current_sector:
@@ -372,9 +316,8 @@ st.markdown("</div>", unsafe_allow_html=True)
 # ============================
 
 # Auto-refresh the page every 5 seconds for live updates
-time.sleep(1)  # Small delay to show updates
+time.sleep(5)  # Refresh every 5 seconds
 st.rerun()
-
 
 
 
