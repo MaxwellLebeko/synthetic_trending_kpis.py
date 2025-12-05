@@ -200,14 +200,9 @@ st.markdown("</div>", unsafe_allow_html=True)
 chart_cols = st.columns([0.05, 0.9, 0.05])
 with chart_cols[1]:
     st.line_chart(
-        df_win.set_index("date")[["Funding_ZAR_M", "Sentiment", "Growth_YoY_%"]],
+        df_win.set_index("date")[["Funding ZAR M", "Sentiment", "Growth YoY%"]],
         height=260
     )
 
-# =============================================
-# DATA TABLE (TIMEFRAME FILTERED)
-# =============================================
 
-st.subheader("Market Data Table")
-st.dataframe(df_win, use_container_width=True)
 
