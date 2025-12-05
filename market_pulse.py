@@ -215,9 +215,3 @@ with trend[1]:
 
 
 
-# ============================
-# OPTIONAL: DATA TABLE (hidden by default)
-# ============================
-
-with st.expander("📊 View full dataset"):
-    st.dataframe(df, height=300)
