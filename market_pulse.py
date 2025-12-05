@@ -1,8 +1,9 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
 import datetime
+import time
+from itertools import cycle
 
 # ============================
 # PAGE CONFIG
@@ -10,47 +11,165 @@ import datetime
 
 st.set_page_config(page_title="BN Pulse Board", layout="wide")
 
-# Remove padding
+# Remove padding and add animations
 st.markdown("""
 <style>
 body { margin:0; padding:0; }
 div.block-container { padding-top: 0rem; }
+
+/* Card styling */
 .card {
-  background-color: rgba(255,255,255,0.04);
-  border-radius: 8px;
-  padding: 10px 14px;
+    background-color: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 10px 14px;
+    border-left: 4px solid #4CC9F0;
+    animation: pulse 2s infinite;
 }
+
+/* KPI animations */
 .kpi {
-  font-size: 1.25rem;
-  font-weight: 600;
+    font-size: 1.25rem;
+    font-weight: 600;
+    background: linear-gradient(90deg, #4CC9F0, #4361EE);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: kpiPulse 3s ease-in-out infinite;
 }
+
 .kpi-label {
-  font-size: 0.75rem;
-  color: #ccc;
+    font-size: 0.75rem;
+    color: #ccc;
 }
+
+/* Slideshow container */
+.slideshow {
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    background: rgba(20, 20, 40, 0.7);
+    border-radius: 12px;
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid rgba(76, 201, 240, 0.2);
+}
+
+.sector-card {
+    min-width: 100%;
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.5s ease;
+    border-radius: 8px;
+    background: rgba(30, 30, 60, 0.5);
+    margin: 0 5px;
+    border: 1px solid rgba(76, 201, 240, 0.1);
+}
+
+.sector-card.active {
+    background: linear-gradient(135deg, rgba(76, 201, 240, 0.2), rgba(67, 97, 238, 0.2));
+    border-color: rgba(76, 201, 240, 0.4);
+    transform: scale(1.02);
+}
+
+.sector-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #4CC9F0;
+    margin-bottom: 8px;
+}
+
+.sector-kpi {
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(76, 201, 240, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(76, 201, 240, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(76, 201, 240, 0); }
+}
+
+@keyframes kpiPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.3; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+/* Update indicator */
+.update-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.7rem;
+    color: #4CC9F0;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Live badge */
+.live-badge {
+    display: inline-block;
+    background: linear-gradient(90deg, #FF416C, #FF4B2B);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    animation: fadeInOut 2s infinite;
+    margin-left: 8px;
+}
+
 footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
 
 # ============================
-# SYNTHETIC DAILY-LIVE DATA
+# SYNTHETIC DAILY-LIVE DATA WITH REAL-TIME UPDATES
 # ============================
 
-def generate_live_timeseries(days=150):
-    """Generate realistic rolling market data over time."""
+def generate_live_timeseries(days=150, base_trend=None):
+    """Generate realistic rolling market data over time with real-time fluctuations."""
     today = datetime.date.today()
     dates = pd.date_range(end=today, periods=days, freq="D")
-
-    base_up = np.cumsum(np.random.normal(0.3, 0.9, size=days))  # trending upward
-    base_flat = np.cumsum(np.random.normal(0.01, 0.4, size=days))  # sideways trend
-    base_vol = np.abs(np.random.normal(0, 1, size=days))  # noisy
-
+    
+    # Add small real-time fluctuations
+    real_time_noise = np.random.normal(0, 0.1, size=days)
+    
+    if base_trend is None:
+        base_up = np.cumsum(np.random.normal(0.3, 0.9, size=days)) + real_time_noise
+        base_flat = np.cumsum(np.random.normal(0.01, 0.4, size=days)) + real_time_noise * 0.5
+        base_vol = np.abs(np.random.normal(0, 1, size=days)) + np.abs(real_time_noise) * 2
+    else:
+        base_up = base_trend[0] + real_time_noise
+        base_flat = base_trend[1] + real_time_noise * 0.5
+        base_vol = base_trend[2] + np.abs(real_time_noise) * 2
+    
     return dates, base_up, base_flat, base_vol
 
 
-def build_sector(name):
+def build_sector(name, iteration=0):
+    """Build sector data with time-based variations for slideshow effect."""
     dates, t1, t2, t3 = generate_live_timeseries()
+    
+    # Add iteration-based variation for slideshow effect
+    phase = iteration * 0.1
+    t1 = t1 + np.sin(np.linspace(0, 2*np.pi, len(t1)) + phase) * 2
+    t2 = t2 + np.cos(np.linspace(0, 2*np.pi, len(t2)) + phase) * 1.5
+    t3 = t3 + np.sin(np.linspace(0, 2*np.pi, len(t3)) + phase * 2) * 1
 
     if name == "ICT":
         return pd.DataFrame({
@@ -98,16 +217,28 @@ def build_sector(name):
         })
 
 
-# map sectors to dataframes
-all_sectors = {
-    "ICT": build_sector("ICT"),
-    "FinTech": build_sector("FinTech"),
-    "AgriTech": build_sector("AgriTech"),
-    "Health & Wellness": build_sector("Health & Wellness"),
-    "Tourism & Hospitality": build_sector("Tourism & Hospitality")
-}
+# ============================
+# SLIDESHOW STATE MANAGEMENT
+# ============================
 
+if 'sector_index' not in st.session_state:
+    st.session_state.sector_index = 0
+    st.session_state.iteration = 0
+    st.session_state.last_update = datetime.datetime.now()
 
+# Auto-advance sectors every 5 seconds
+time_diff = (datetime.datetime.now() - st.session_state.last_update).total_seconds()
+if time_diff > 5:  # Change sector every 5 seconds
+    st.session_state.sector_index = (st.session_state.sector_index + 1) % 5
+    st.session_state.iteration += 1
+    st.session_state.last_update = datetime.datetime.now()
+
+# ============================
+# GENERATE DATA WITH ITERATION
+# ============================
+
+sector_names = ["ICT", "FinTech", "AgriTech", "Health & Wellness", "Tourism & Hospitality"]
+all_sectors = {name: build_sector(name, st.session_state.iteration) for name in sector_names}
 
 # ============================
 # REPORT BUTTON (center-top)
@@ -123,95 +254,126 @@ with colB:
         use_container_width=True
     )
 
-
-
 # ============================
-# SECTOR SELECTOR
+# SLIDESHOW DISPLAY
 # ============================
 
+st.markdown("<div class='slideshow'>", unsafe_allow_html=True)
+
+# Update indicator
+st.markdown(f"<div class='update-indicator'>🔄 Updated: {datetime.datetime.now().strftime('%H:%M:%S')}</div>", unsafe_allow_html=True)
+
+# Create columns for slideshow
+cols = st.columns(5)
+current_sector = sector_names[st.session_state.sector_index]
+
+for idx, (sector_name, col) in enumerate(zip(sector_names, cols)):
+    df_sector = all_sectors[sector_name]
+    
+    with col:
+        is_active = (sector_name == current_sector)
+        active_class = "active" if is_active else ""
+        
+        # Get appropriate KPI based on sector type
+        if sector_name in ["ICT", "FinTech"]:
+            kpi_value = f"R {df_sector['Funding_ZAR_M'].iloc[-1]:,.1f}M"
+            kpi_label = "Funding"
+        else:
+            kpi_value = f"R {df_sector['Investment_ZAR_M'].iloc[-1]:,.1f}M"
+            kpi_label = "Investment"
+        
+        st.markdown(f"""
+        <div class='sector-card {active_class}'>
+            <div class='sector-name'>{sector_name}{'<span class="live-badge">LIVE</span>' if is_active else ''}</div>
+            <div class='sector-kpi'>{kpi_value}</div>
+            <div style='font-size: 0.7rem; color: #888;'>{kpi_label}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# Manual sector selector (optional)
+st.markdown("---")
 sector = st.selectbox(
-    "Choose sector",
-    list(all_sectors.keys()),
+    "Choose sector (or let slideshow auto-rotate)",
+    sector_names,
+    index=st.session_state.sector_index,
+    key="sector_selector",
     label_visibility="collapsed"
 )
 
+# Update index if manually selected
+if sector != current_sector:
+    st.session_state.sector_index = sector_names.index(sector)
+    st.rerun()
+
 df = all_sectors[sector]
 
-
-
 # ============================
-# KPIs — HORIZONTAL
+# LIVE KPIs — ANIMATED
 # ============================
 
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 
 if sector in ["ICT", "FinTech"]:
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.markdown(f"""
-        <div><div class='kpi'>R {df['Funding_ZAR_M'].iloc[-1]:,.1f}M</div>
-        <div class='kpi-label'>Funding</div></div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-        <div><div class='kpi'>{df['Sentiment'].iloc[-1]}</div>
-        <div class='kpi-label'>Sentiment (0–100)</div></div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown(f"""
-        <div><div class='kpi'>{df['Growth_YoY_%'].iloc[-1]}%</div>
-        <div class='kpi-label'>YoY Growth</div></div>
-        """, unsafe_allow_html=True)
-
-    with col4:
-        st.markdown(f"""
-        <div><div class='kpi'>{int(df['Social_Mentions'].iloc[-1]):,}</div>
-        <div class='kpi-label'>Social Mentions</div></div>
-        """, unsafe_allow_html=True)
-
+    cols = st.columns(4)
+    
+    metrics = [
+        (f"R {df['Funding_ZAR_M'].iloc[-1]:,.1f}M", "Funding", "#4CC9F0"),
+        (f"{df['Sentiment'].iloc[-1]}", "Sentiment (0–100)", "#F72585"),
+        (f"{df['Growth_YoY_%'].iloc[-1]}%", "YoY Growth", "#7209B7"),
+        (f"{int(df['Social_Mentions'].iloc[-1]):,}", "Social Mentions", "#3A0CA3")
+    ]
+    
+    for (value, label, color), col in zip(metrics, cols):
+        with col:
+            st.markdown(f"""
+            <div>
+                <div class='kpi' style='background: linear-gradient(90deg, {color}, #4361EE); -webkit-background-clip: text;'>{value}</div>
+                <div class='kpi-label'>{label}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
 else:
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.markdown(f"""
-        <div><div class='kpi'>R {df['Investment_ZAR_M'].iloc[-1]:,.1f}M</div>
-        <div class='kpi-label'>Investment</div></div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-        <div><div class='kpi'>{df['Adoption_%'].iloc[-1]}%</div>
-        <div class='kpi-label'>Adoption Rate</div></div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown(f"""
-        <div><div class='kpi'>{df['Sentiment'].iloc[-1]}</div>
-        <div class='kpi-label'>Sentiment</div></div>
-        """, unsafe_allow_html=True)
-
-    with col4:
-        st.markdown(f"""
-        <div><div class='kpi'>{int(df['Policy_Mentions'].iloc[-1]):,}</div>
-        <div class='kpi-label'>Policy Mentions</div></div>
-        """, unsafe_allow_html=True)
+    cols = st.columns(4)
+    
+    metrics = [
+        (f"R {df['Investment_ZAR_M'].iloc[-1]:,.1f}M", "Investment", "#4CC9F0"),
+        (f"{df['Adoption_%'].iloc[-1]}%", "Adoption Rate", "#F72585"),
+        (f"{df['Sentiment'].iloc[-1]}", "Sentiment", "#7209B7"),
+        (f"{int(df['Policy_Mentions'].iloc[-1]):,}", "Policy Mentions", "#3A0CA3")
+    ]
+    
+    for (value, label, color), col in zip(metrics, cols):
+        with col:
+            st.markdown(f"""
+            <div>
+                <div class='kpi' style='background: linear-gradient(90deg, {color}, #4361EE); -webkit-background-clip: text;'>{value}</div>
+                <div class='kpi-label'>{label}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-
-
 # ============================
-# TREND CHART — CENTERED
+# TREND CHART — ANIMATED
 # ============================
 
+st.markdown("<div style='animation: slideIn 0.5s ease-out;'>", unsafe_allow_html=True)
 trend = st.columns([0.05, 0.9, 0.05])
 with trend[1]:
     numeric_cols = df.select_dtypes(include=[np.number]).drop(columns=["Social_Mentions", "Policy_Mentions"], errors="ignore")
     st.line_chart(numeric_cols.set_index(df["date"]), height=240)
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ============================
+# AUTO-REFRESH
+# ============================
+
+# Auto-refresh the page every 5 seconds for live updates
+time.sleep(1)  # Small delay to show updates
+st.rerun()
+
 
 
 
